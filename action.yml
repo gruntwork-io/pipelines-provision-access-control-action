@@ -1,0 +1,134 @@
+name: Bootstrap a new account in access-control repo
+description: "Sets up a new AWS account and basic roles inside the access control repo"
+inputs:
+  token:
+    description: "The GitHub token to use for checking out the infrastructure-live repo"
+    required: true
+  deploy_branch_name:
+    description: "The name of the configured deploy branch"
+    required: false
+    default: main
+  change_type:
+    description: ""
+    required: true
+  branch:
+    description: ""
+    required: true
+  working_directory:
+    description: ""
+    required: true
+  account_id:
+    description: ""
+    required: true
+  terragrunt_command:
+    description: ""
+    required: true
+  additional_data:
+    description: ""
+    required: true
+  child_account_id:
+    description: ""
+    required: true
+  new_account_name:
+    description: ""
+    required: true
+  team_account_names:
+    description: ""
+    required: true
+
+outputs:
+  gruntwork_config:
+    description: "YAML string contents of .gruntwork/config.yml in infrastructure-pipelines repo"
+    value: ${{ steps.read_gruntwork_config.outputs.config }}
+
+
+runs:
+  using: composite
+  steps:
+    - name: Read Gruntwork config file
+      id: gruntwork
+      shell: bash
+      run: |
+        config="$(cat .gruntwork/config.yml | base64 -w 0)"
+        echo "config=$config" >> $GITHUB_OUTPUT
+        access_control_repo="$(yq -r .access-control-repo .gruntwork/config.yml)"
+        echo "access_control_repo=$access_control_repo" >> $GITHUB_OUTPUT
+    - name: "[BoilerplateAccessControl] Checkout access control repo"
+      uses: actions/checkout@v4
+      with:
+       token: ${{secrets.MANAGE_REPOS_TOKEN }}
+       repository: ${{github.repository_owner }}/${{ steps.gruntwork.outputs.access_control_repo }}
+       path: ${{ steps.gruntwork.outputs.access_control_repo }}
+       ref: main
+       fetch-depth: 0
+
+    - name: "[BoilerplateAccessControl] Install boilerplate"
+      shell: bash
+      run: |
+        curl -Ls https://raw.githubusercontent.com/gruntwork-io/gruntwork-installer/main/bootstrap-gruntwork-installer.sh | bash /dev/stdin --version "$GRUNTWORK_INSTALLER_VERSION"
+        gruntwork-install --binary-name boilerplate --repo https://github.com/gruntwork-io/boilerplate --tag "$BOILERPLATE_VERSION"
+
+    - name: "[BoilerplateAccessControl] Checkout architecture catalog"
+      uses: actions/checkout@v4
+      with:
+        token: ${{secrets.GRUNTWORK_CODE_ACCESS_TOKEN }}
+        repository: gruntwork-io/terraform-aws-architecture-catalog
+        path: terraform-aws-architecture-catalog
+        ref: ${{env.ARCH_CATALOG_VERSION }}
+
+    - name: "[BoilerplateAccessControl] Run boilerplate to scaffold new account in access-control repo"
+      shell: bash
+      working-directory: ${{ steps.gruntwork.outputs.access_control_repo }}
+      env:
+        TAGS: ${{ steps.bootstrap.outputs.tags }}
+        WORKING_DIRECTORY: ${{ steps.bootstrap.outputs.working_directory }}
+        INFRA_LIVE_DIRECTORY: ${{ steps.bootstrap.outputs.infra_live_directory }}
+        ORG_NAME_PREFIX: ${{ steps.bootstrap.outputs.org_name_prefix }}
+        AWS_REGION: ${{ steps.bootstrap.outputs.aws_region }}
+        INFRA_LIVE_REPO_NAME: ${{ steps.gruntwork.outputs.access_control_repo }}
+        TERRAFORM_VERSION: ${{ steps.bootstrap.outputs.s.terraform_version }}
+        TERRAGRUNT_VERSION: ${{ steps.bootstrap.outputs.terragrunt_version }}
+        CREATE_VPC: ${{ steps.bootstrap.outputs.create_vpc }}
+        CATALOG_REPOSITORIES: ${{ steps.bootstrap.outputs.catalog_repositories }}
+      run: |
+        # Convert list of accounts to Bash array. We use working_directory here because GW Pipelines will configure
+        # its name as a comma-separated list of account names.
+        IFS=',' read -ra account_names <<<"$WORKING_DIRECTORY"
+
+        # Convert Bash array to JSON array: https://stackoverflow.com/a/67489301/483528
+        account_names_as_json_list="$(jq --compact-output --raw-output --monochrome-output --null-input '$ARGS.positional' --args -- "${account_names[@]}")"
+
+        # Use yq to filter accounts.yml to just the accounts we created, producing JSON output
+        AWS_ACCOUNTS="$(yq --no-colors -o=json -I=0 pick\("$account_names_as_json_list"\) "../$INFRA_LIVE_DIRECTORY/accounts.yml")"
+
+        # Run boilerplate to scaffold out the access control new account
+        boilerplate \
+          --template-url ../terraform-aws-architecture-catalog//templates/devops-foundations-infrastructure-live-delegated \
+          --output-folder . \
+          --var AWSAccounts="$AWS_ACCOUNTS" \
+          --var OrgNamePrefix="$ORG_NAME_PREFIX" \
+          --var DefaultRegion="$AWS_REGION" \
+          --var RepoBaseUrl=github.com/{{ .GithubOrg }} \
+          --var GithubOrg={{ .GithubOrg }} \
+          --var InfraLiveRepoName="$INFRA_LIVE_REPO_NAME" \
+          --var InfraModulesRepoName="$INFRA_MODULES_REPO_NAME" \
+          --var InfraModulesReleaseVersion="$INFRA_MODULES_RELEASE_VERSION" \
+          --var TerraformVersion="$TERRAFORM_VERSION" \
+          --var TerragruntVersion="$TERRAGRUNT_VERSION" \
+          --var DefaultTags="$TAGS" \
+          --var VPCCreated="$CREATE_VPC" \
+          --var CatalogRepositories="$CATALOG_REPOSITORIES" \
+          --non-interactive
+
+    - name: "[BoilerplateAccessControl] Create Pull Request in access control repo with new account scaffolding"
+      id: create_scaffolding_pr
+      uses: peter-evans/create-pull-request@v6
+      with:
+        base: main
+        path: ${{ steps.gruntwork.outputs.delegate_repo_name }}
+        token: ${{secrets.MANAGE_REPOS_TOKEN }}
+        branch: "bootstrap-repository"
+        commit-message: "Bootstrap infrastructure-live repository"
+        title: "Bootstrap infrastructure-live repository"
+        body: |
+          This pull request adds all code required to set up your `infrastructure-live` repository.
