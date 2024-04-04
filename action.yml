@@ -87,15 +87,21 @@ runs:
           --var CatalogRepositories="$CATALOG_REPOSITORIES" \
           --non-interactive
 
-    - name: "[BoilerplateAccessControl] Create Pull Request in access control repo with new account scaffolding"
-      id: create_scaffolding_pr
-      uses: peter-evans/create-pull-request@v6
+    - name: Create pull request
+      shell: bash
+      id: create_access_control_pr
+      working-directory: ${{ steps.gruntwork_context.outputs.delegate_repo_name }}
+      env:
+        DELEGATE: ${{ steps.gruntwork_context.outputs.delegate_repo_name }}
+      run: |
+        PR_URL=$(gh pr create --base "main" --title "Roles for $DELEGATE" --body "This pull request sets up new roles for the $DELEGATE repository")
+        PR_NUMBER=$(basename $PR_URL)
+        echo "pr_number=$PR_NUMBER" >>
+
+    - name: Merge Access Control Pull Request
+      uses: juliangruber/merge-pull-request-action@v1
       with:
-        base: main
-        path: ${{ steps.gruntwork_context.outputs.delegate_repo_name }}
-        token: ${{ inputs.manage_repo_token }}
-        branch: "bootstrap-repository"
-        commit-message: "Bootstrap infrastructure-live repository"
-        title: "Bootstrap infrastructure-live repository"
-        body: |
-          This pull request adds all code required to set up your `infrastructure-live` repository.
+        github-token: ${{ inputs.manage_repo_token }}
+        number: ${{ steps.create_access_control_pr.outputs.pr_number }}
+        method: squash # merge rebase
+        repo: $GITHUB_REPOSITORY_OWNER/${{ steps.gruntwork_contest.outputs.access_control_repo }}
