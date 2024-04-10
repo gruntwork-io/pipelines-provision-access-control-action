@@ -24,8 +24,8 @@ runs:
       uses: actions/checkout@v4
       with:
        token: ${{  inputs.manage_repo_token }}
-       repository: ${{github.repository_owner }}/${{ steps.gruntwork_context.outputs.access_control_repo }}
-       path: ${{ steps.gruntwork_context.outputs.access_control_repo }}
+       repository: ${{github.repository_owner }}/pipelines-v3-access-control-test # TODO ${{ steps.gruntwork_context.outputs.access_control_repo }}
+       path: pipelines-v3-access-control-test # TODO ${{ steps.gruntwork_context.outputs.access_control_repo }}
        ref: main
        fetch-depth: 0
 
@@ -45,14 +45,14 @@ runs:
 
     - name: "[BoilerplateAccessControl] Run boilerplate to scaffold new account in access-control repo"
       shell: bash
-      working-directory: ${{ steps.gruntwork_context.outputs.access_control_repo }}
+      working-directory: pipelines-v3-access-control-test # TODO ${{ steps.gruntwork_context.outputs.access_control_repo }}
       env:
         TAGS: ${{ steps.bootstrap.outputs.tags }}
         WORKING_DIRECTORY: ${{ steps.bootstrap.outputs.working_directory }}
         INFRA_LIVE_DIRECTORY: ${{ steps.bootstrap.outputs.infra_live_directory }}
         ORG_NAME_PREFIX: ${{ steps.bootstrap.outputs.org_name_prefix }}
         AWS_REGION: ${{ steps.bootstrap.outputs.aws_region }}
-        INFRA_LIVE_REPO_NAME: ${{ steps.gruntwork_context.outputs.access_control_repo }}
+        INFRA_LIVE_REPO_NAME: pipelines-v3-access-control-test #${{ steps.gruntwork_context.outputs.access_control_repo }}
         TOFU_VERSION: ${{ steps.bootstrap.outputs.tofu_version }}
         TERRAGRUNT_VERSION: ${{ steps.bootstrap.outputs.terragrunt_version }}
         CREATE_VPC: ${{ steps.bootstrap.outputs.create_vpc }}
@@ -104,4 +104,4 @@ runs:
         github-token: ${{ inputs.manage_repo_token }}
         number: ${{ steps.create_access_control_pr.outputs.pr_number }}
         method: squash # merge rebase
-        repo: $GITHUB_REPOSITORY_OWNER/${{ steps.gruntwork_contest.outputs.access_control_repo }}
+        repo: $GITHUB_REPOSITORY_OWNER/pipelines-v3-access-control-test #${{ steps.gruntwork_contest.outputs.access_control_repo }}
