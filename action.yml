@@ -90,7 +90,8 @@ runs:
           git config --global user.name "$(git --no-pager log --format=format:'%an' -n 1)"
           git config --global user.email "$(git --no-pager log --format=format:'%ae' -n 1)"
 
-          git commit -am "Added roles for $DELEGATE_REPO"
+          git add .
+          git commit -m "Added roles for $DELEGATE_REPO"
           git push origin "roles-for-$DELEGATE_REPO"
 
           PR_URL="$(gh pr create --base "main" --title "Roles for $DELEGATE_REPO" --body "This pull request sets up new roles for the $DELEGATE_REPO repository")"
