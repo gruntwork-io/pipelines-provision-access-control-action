@@ -49,9 +49,9 @@ runs:
       shell: bash
       working-directory: pipelines-v3-access-control-test # TODO ${{ steps.gruntwork_context.outputs.access_control_repo }}
       env:
-        WORKING_DIRECTORY: ${{ steps.bootstrap.outputs.working_directory }}
-        ORG_NAME_PREFIX: ${{ steps.bootstrap.outputs.org_name_prefix }}
-        AWS_REGION: ${{ steps.bootstrap.outputs.aws_region }}
+        WORKING_DIRECTORY: ${{ steps.gruntwork_context.outputs.working_directory }}
+        ORG_NAME_PREFIX: ${{ steps.gruntwork_context.outputs.org_name_prefix }}
+        AWS_REGION: ${{ steps.gruntwork_context.outputs.aws_region }}
         DELEGATE_REPO_NAME: ${{ steps.gruntwork_context.outputs.delegate_repo_name }}
       run: |
         # Convert list of accounts to Bash array. We use working_directory here because GW Pipelines will configure
@@ -85,7 +85,7 @@ runs:
       run: |
         PR_URL=$(gh pr create --base "main" --title "Roles for $DELEGATE" --body "This pull request sets up new roles for the $DELEGATE repository")
         PR_NUMBER=$(basename $PR_URL)
-        echo "pr_number=$PR_NUMBER" >>
+        echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
 
     - name: Merge Access Control Pull Request
       uses: juliangruber/merge-pull-request-action@v1
