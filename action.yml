@@ -82,6 +82,7 @@ runs:
       working-directory: ${{ steps.gruntwork_context.outputs.delegate_repo_name }}
       env:
         DELEGATE: ${{ steps.gruntwork_context.outputs.delegate_repo_name }}
+        GH_TOKEN: ${{ inputs.manage_repo_token }}
       run: |
         PR_URL=$(gh pr create --base "main" --title "Roles for $DELEGATE" --body "This pull request sets up new roles for the $DELEGATE repository")
         PR_NUMBER=$(basename $PR_URL)
