@@ -23,7 +23,7 @@ runs:
     - name: "[BoilerplateAccessControl] Checkout access control repo"
       uses: actions/checkout@v4
       with:
-       token: ${{  inputs.manage_repo_token }}
+       token: ${{ inputs.manage_repo_token }}
        repository: ${{github.repository_owner }}/pipelines-v3-access-control-test # TODO ${{ steps.gruntwork_context.outputs.access_control_repo }}
        path: pipelines-v3-access-control-test # TODO ${{ steps.gruntwork_context.outputs.access_control_repo }}
        ref: main
@@ -41,22 +41,18 @@ runs:
         token: ${{ inputs.gruntwork_code_access_token }}
         repository: gruntwork-io/terraform-aws-architecture-catalog
         path: terraform-aws-architecture-catalog
-        ref: ${{ steps.gruntwork_context.outputs.arch_catalog_version }}
+        # FIXME: Revert this to the ref once testing is complete.
+        # ref: ${{ steps.gruntwork_context.outputs.arch_catalog_version }}
+        ref: '75fb65f4cdc01de81ceb480d2d776a857b7c25a9'
 
     - name: "[BoilerplateAccessControl] Run boilerplate to scaffold new account in access-control repo"
       shell: bash
       working-directory: pipelines-v3-access-control-test # TODO ${{ steps.gruntwork_context.outputs.access_control_repo }}
       env:
-        TAGS: ${{ steps.bootstrap.outputs.tags }}
         WORKING_DIRECTORY: ${{ steps.bootstrap.outputs.working_directory }}
-        INFRA_LIVE_DIRECTORY: ${{ steps.bootstrap.outputs.infra_live_directory }}
         ORG_NAME_PREFIX: ${{ steps.bootstrap.outputs.org_name_prefix }}
         AWS_REGION: ${{ steps.bootstrap.outputs.aws_region }}
-        INFRA_LIVE_REPO_NAME: pipelines-v3-access-control-test #${{ steps.gruntwork_context.outputs.access_control_repo }}
-        TOFU_VERSION: ${{ steps.bootstrap.outputs.tofu_version }}
-        TERRAGRUNT_VERSION: ${{ steps.bootstrap.outputs.terragrunt_version }}
-        CREATE_VPC: ${{ steps.bootstrap.outputs.create_vpc }}
-        CATALOG_REPOSITORIES: ${{ steps.bootstrap.outputs.catalog_repositories }}
+        DELEGATE_REPO_NAME: ${{ steps.gruntwork_context.outputs.delegate_repo_name }}
       run: |
         # Convert list of accounts to Bash array. We use working_directory here because GW Pipelines will configure
         # its name as a comma-separated list of account names.
@@ -65,26 +61,19 @@ runs:
         # Convert Bash array to JSON array: https://stackoverflow.com/a/67489301/483528
         account_names_as_json_list="$(jq --compact-output --raw-output --monochrome-output --null-input '$ARGS.positional' --args -- "${account_names[@]}")"
 
-        # Use yq to filter accounts.yml to just the accounts we created, producing JSON output
-        AWS_ACCOUNTS="$(yq --no-colors -o=json -I=0 pick\("$account_names_as_json_list"\) "../$INFRA_LIVE_DIRECTORY/accounts.yml")"
+        # Convert yaml to JSON for consumption by boilerplate
+        aws_accounts="$(yq --no-colors -o=json -I=0 '../accounts.yml')"
 
         # Run boilerplate to scaffold out the access control new account
         boilerplate \
-          --template-url ../terraform-aws-architecture-catalog//templates/devops-foundations-infrastructure-live-delegated \
+          --template-url ../terraform-aws-architecture-catalog//templates/devops-foundations-infrastructure-live-access-control-accounts \
           --output-folder . \
-          --var AWSAccounts="$AWS_ACCOUNTS" \
+          --var AWSAccounts="$aws_accounts" \
+          --var NewAWSAccounts="$account_names_as_json_list" \
           --var OrgNamePrefix="$ORG_NAME_PREFIX" \
           --var DefaultRegion="$AWS_REGION" \
-          --var RepoBaseUrl=github.com/{{ .GithubOrg }} \
-          --var GithubOrg={{ .GithubOrg }} \
-          --var InfraLiveRepoName="$INFRA_LIVE_REPO_NAME" \
-          --var InfraModulesRepoName="$INFRA_MODULES_REPO_NAME" \
-          --var InfraModulesReleaseVersion="$INFRA_MODULES_RELEASE_VERSION" \
-          --var TerraformVersion="$TOFU_VERSION" \
-          --var TerragruntVersion="$TERRAGRUNT_VERSION" \
-          --var DefaultTags="$TAGS" \
-          --var VPCCreated="$CREATE_VPC" \
-          --var CatalogRepositories="$CATALOG_REPOSITORIES" \
+          --var GithubOrg=gruntwork-io-team \
+          --var DelegateRepoName="$DELEGATE_REPO_NAME" \
           --non-interactive
 
     - name: Create pull request
