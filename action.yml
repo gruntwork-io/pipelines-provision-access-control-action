@@ -76,16 +76,21 @@ runs:
           --var DelegateRepoName="$DELEGATE_REPO_NAME" \
           --non-interactive
 
-    - name: Create pull request
+    - name: Ensure pull request
       shell: bash
       id: create_access_control_pr
       working-directory: ${{ steps.gruntwork_context.outputs.delegate_repo_name }}
       env:
-        DELEGATE: ${{ steps.gruntwork_context.outputs.delegate_repo_name }}
+        DELEGATE_REPO: ${{ steps.gruntwork_context.outputs.delegate_repo_name }}
         GH_TOKEN: ${{ inputs.manage_repo_token }}
       run: |
-        PR_URL=$(gh pr create --base "main" --title "Roles for $DELEGATE" --body "This pull request sets up new roles for the $DELEGATE repository")
-        PR_NUMBER=$(basename $PR_URL)
+        git checkout -b "roles-for-$DELEGATE_REPO"
+
+        if ! PR_NUMBER="$(gh pr view --json number -q '.number')"; then
+          PR_URL="$(gh pr create --base "main" --title "Roles for $DELEGATE_REPO" --body "This pull request sets up new roles for the $DELEGATE_REPO repository")"
+          PR_NUMBER="$(basename "$PR_URL")"
+        fi
+
         echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
 
     - name: Merge Access Control Pull Request
