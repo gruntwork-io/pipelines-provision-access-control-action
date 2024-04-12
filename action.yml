@@ -23,9 +23,9 @@ runs:
     - name: "[BoilerplateAccessControl] Checkout access control repo"
       uses: actions/checkout@v4
       with:
-       token: ${{ inputs.manage_repo_token }}
-       repository: ${{github.repository_owner }}/pipelines-v3-access-control-test # TODO ${{ steps.gruntwork_context.outputs.access_control_repo }}
-       path: pipelines-v3-access-control-test # TODO ${{ steps.gruntwork_context.outputs.access_control_repo }}
+       token: ${{  inputs.manage_repo_token }}
+       repository: ${{github.repository_owner }}/${{ steps.gruntwork_context.outputs.access_control_repo }}
+       path: ${{ steps.gruntwork_context.outputs.access_control_repo }}
        ref: main
        fetch-depth: 0
 
@@ -47,7 +47,7 @@ runs:
 
     - name: "[BoilerplateAccessControl] Run boilerplate to scaffold new account in access-control repo"
       shell: bash
-      working-directory: pipelines-v3-access-control-test # TODO ${{ steps.gruntwork_context.outputs.access_control_repo }}
+      working-directory: ${{ steps.gruntwork_context.outputs.access_control_repo }}
       env:
         WORKING_DIRECTORY: ${{ steps.gruntwork_context.outputs.working_directory }}
         ORG_NAME_PREFIX: ${{ steps.gruntwork_context.outputs.org_name_prefix }}
