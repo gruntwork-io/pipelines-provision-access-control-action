@@ -41,9 +41,7 @@ runs:
         token: ${{ inputs.gruntwork_code_access_token }}
         repository: gruntwork-io/terraform-aws-architecture-catalog
         path: terraform-aws-architecture-catalog
-        # FIXME: Revert this to the ref once testing is complete.
-        # ref: ${{ steps.gruntwork_context.outputs.arch_catalog_version }}
-        ref: '75fb65f4cdc01de81ceb480d2d776a857b7c25a9'
+        ref: ${{ steps.gruntwork_context.outputs.arch_catalog_version }}
 
     - name: "[BoilerplateAccessControl] Run boilerplate to scaffold new account in access-control repo"
       shell: bash
