@@ -1,10 +1,10 @@
 name: Bootstrap a new account in access-control repo
 description: "Sets up a new AWS account and basic roles inside the access control repo"
 inputs:
-  gruntwork_code_access_token:
+  PIPELINES_READ_TOKEN:
     description: "The GitHub token to use for checking out the infrastructure-live repo"
     required: true
-  manage_repo_token:
+  ORG_REPO_ADMIN_TOKEN:
     description: "The GitHub token to use for checking out the infrastructure-live repo"
     required: true
   gruntwork_context:
@@ -23,7 +23,7 @@ runs:
     - name: "[BoilerplateAccessControl] Checkout access control repo"
       uses: actions/checkout@v4
       with:
-       token: ${{  inputs.manage_repo_token }}
+       token: ${{  inputs.ORG_REPO_ADMIN_TOKEN }}
        repository: ${{github.repository_owner }}/${{ steps.gruntwork_context.outputs.access_control_repo }}
        path: ${{ steps.gruntwork_context.outputs.access_control_repo }}
        ref: main
@@ -31,14 +31,17 @@ runs:
 
     - name: "[BoilerplateAccessControl] Install boilerplate"
       shell: bash
+      env:
+        GRUNTWORK_INSTALLER_VERSION: ${{ steps.gruntwork_context.outputs.gruntwork_installer_version }}
+        BOILERPLATE_VERSION: ${{ steps.gruntwork_context.outputs.boilerplate_version }}
       run: |
-        curl -Ls https://raw.githubusercontent.com/gruntwork-io/gruntwork-installer/main/bootstrap-gruntwork-installer.sh | bash /dev/stdin --version "${{ steps.gruntwork_context.outputs.gruntwork_installer_version }}"
-        gruntwork-install --binary-name boilerplate --repo https://github.com/gruntwork-io/boilerplate --tag "${{ steps.gruntwork_context.outputs.boilerplate_version }}"
+        curl -Ls https://raw.githubusercontent.com/gruntwork-io/gruntwork-installer/main/bootstrap-gruntwork-installer.sh | bash /dev/stdin --version "$GRUNTWORK_INSTALLER_VERSION"
+        gruntwork-install --binary-name boilerplate --repo https://github.com/gruntwork-io/boilerplate --tag "$BOILERPLATE_VERSION"
 
     - name: "[BoilerplateAccessControl] Checkout architecture catalog"
       uses: actions/checkout@v4
       with:
-        token: ${{ inputs.gruntwork_code_access_token }}
+        token: ${{ inputs.PIPELINES_READ_TOKEN }}
         repository: gruntwork-io/terraform-aws-architecture-catalog
         path: terraform-aws-architecture-catalog
         ref: ${{ steps.gruntwork_context.outputs.arch_catalog_version }}
@@ -80,7 +83,7 @@ runs:
       working-directory: pipelines-v3-access-control-test # TODO ${{ steps.gruntwork_context.outputs.access_control_repo }}
       env:
         DELEGATE_REPO: ${{ steps.gruntwork_context.outputs.delegate_repo_name }}
-        GH_TOKEN: ${{ inputs.manage_repo_token }}
+        GH_TOKEN: ${{ inputs.ORG_REPO_ADMIN_TOKEN }}
       run: |
         git checkout -b "roles-for-$DELEGATE_REPO"
 
