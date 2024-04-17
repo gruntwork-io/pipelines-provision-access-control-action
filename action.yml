@@ -11,6 +11,14 @@ inputs:
     description: ""
     required: true
 
+outputs:
+  pull_request_number:
+    description: "The number of the pull request that was created"
+    value: ${{ steps.create_access_control_pr.outputs.pr_number }}
+  pull_request_url:
+    description: "The URL of the pull request that was created"
+    value: ${{ steps.create_access_control_pr.outputs.pr_url }}
+
 runs:
   using: composite
   steps:
@@ -23,11 +31,11 @@ runs:
     - name: "[BoilerplateAccessControl] Checkout access control repo"
       uses: actions/checkout@v4
       with:
-       token: ${{  inputs.ORG_REPO_ADMIN_TOKEN }}
-       repository: ${{github.repository_owner }}/${{ steps.gruntwork_context.outputs.access_control_repo }}
-       path: ${{ steps.gruntwork_context.outputs.access_control_repo }}
-       ref: main
-       fetch-depth: 0
+        token: ${{  inputs.ORG_REPO_ADMIN_TOKEN }}
+        repository: ${{github.repository_owner }}/${{ steps.gruntwork_context.outputs.access_control_repo }}
+        path: ${{ steps.gruntwork_context.outputs.access_control_repo }}
+        ref: main
+        fetch-depth: 0
 
     - name: "[BoilerplateAccessControl] Install boilerplate"
       shell: bash
@@ -101,3 +109,4 @@ runs:
         fi
 
         echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+        echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
