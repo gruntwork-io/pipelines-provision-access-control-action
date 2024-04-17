@@ -88,7 +88,7 @@ runs:
         git checkout -b "roles-for-$DELEGATE_REPO"
 
         # If the PR already exists and is open, we don't need to create it again
-        if ! PR_NUMBER="$(gh pr view --json number -q '. | select(.state | contains("OPEN")) | .number')" && [[ "$PR_NUMBER" != '' ]]; then
+        if ! PR_NUMBER="$(gh pr view --json number -q '. | select(.state | contains("OPEN")) | .number')"; then
           git config --global user.name "$GITHUB_ACTOR"
           git config --global user.email "${GITHUB_ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com"
 
