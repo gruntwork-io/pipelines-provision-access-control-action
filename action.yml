@@ -88,7 +88,7 @@ runs:
     - name: Ensure pull request
       shell: bash
       id: create_access_control_pr
-      working-directory: pipelines-v3-access-control-test # TODO ${{ steps.gruntwork_context.outputs.access_control_repo }}
+      working-directory: ${{ steps.gruntwork_context.outputs.access_control_repo }}
       env:
         DELEGATE_REPO: ${{ steps.gruntwork_context.outputs.delegate_repo_name }}
         GH_TOKEN: ${{ inputs.ORG_REPO_ADMIN_TOKEN }}
