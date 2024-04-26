@@ -24,7 +24,7 @@ runs:
   steps:
     - name: "[Baseline]: Read account request"
       id: gruntwork_context
-      uses: gruntwork-io-team/pipelines-bootstrap@main
+      uses: gruntwork-io/pipelines-bootstrap@main
       with:
         cache: ${{ inputs.gruntwork_context }}
 
@@ -81,7 +81,7 @@ runs:
           --var NewAWSAccounts="$account_names_as_json_list" \
           --var OrgNamePrefix="$ORG_NAME_PREFIX" \
           --var DefaultRegion="$AWS_REGION" \
-          --var GithubOrg=gruntwork-io-team \
+          --var GithubOrg=gruntwork-io \
           --var DelegateRepoName="$DELEGATE_REPO_NAME" \
           --non-interactive
 
