@@ -24,7 +24,7 @@ runs:
   steps:
     - name: "[Baseline]: Read account request"
       id: gruntwork_context
-      uses: gruntwork-io/pipelines-bootstrap@main
+      uses: gruntwork-io/pipelines-bootstrap@v0.0.1
       with:
         cache: ${{ inputs.gruntwork_context }}
 
